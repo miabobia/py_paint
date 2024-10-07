@@ -4,6 +4,7 @@ import yaml
 from layer import Layer
 from ui import UI
 from buffer import Buffer
+import numpy as np
 
 # Load the configuration from YAML file
 with open("config.yaml", 'r') as file:
@@ -57,6 +58,10 @@ buffer_has_data = False
 current_mouse: tuple[int, int] = ()
 old_mouse: tuple[int, int]
 
+# pixel copy
+pixel_copy_arr = np.zeros([LAYER_WIDTH, LAYER_HEIGHT], np.uint32)
+
+
 # Main loop
 running = True
 while running:
@@ -93,7 +98,7 @@ while running:
         current_mouse = mouse_pos
 
         # interact with ui
-        if mouse_y > LAYER_HEIGHT: # change color
+        if mouse_y > LAYER_HEIGHT and mouse_x >= 0: # change color
             brush_color = color_picker.get_color(mouse_x)
         else:
             buffer_has_data = True
@@ -104,9 +109,16 @@ while running:
                 end_pos=current_mouse,
                 width=brush_size
             )
-    elif mouse_buttons[1]:
+    elif mouse_buttons[2]:
+        print(pixel_copy_arr)
         # right click
-        pass
+        pygame.pixelcopy.surface_to_array(
+            array=pixel_copy_arr,
+            surface=layers[current_layer].surface,
+        )
+
+        print(pixel_copy_arr)
+
     else:
         # no mouse pressed
         current_mouse = ()
@@ -115,9 +127,8 @@ while running:
         # push buffer contents to current layer
         if buffer_has_data:
             layers[current_layer].set_pixels(buffer.get_painted_pixels())
-
-        buffer.clear()
-        buffer_has_data = False
+            buffer.clear()
+            buffer_has_data = False
     # Update the display
     pygame.display.flip()
     clock.tick(60)
