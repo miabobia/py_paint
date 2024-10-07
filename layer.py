@@ -3,7 +3,14 @@ layer class
 '''
 
 from typing import List
-from pygame import Surface, PixelArray
+import pygame
+import numpy as np
+
+# Add this function above your main loop
+def save_layer_as_array(layer, filename):
+    pixel_array = pygame.surfarray.array3d(layer.surface)
+    pixel_array = np.transpose(pixel_array, (1, 0, 2))
+    np.save(filename, pixel_array)
 
 class Layer:
     z_level: int # 0 is at the very front
