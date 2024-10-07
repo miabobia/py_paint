@@ -1,14 +1,14 @@
 import pygame
 import sys
-import yaml
+from config import config
 from layer import Layer
-from ui import UI
+from ui import ColorPicker, LayerHandler
 from buffer import Buffer
 import numpy as np
 
 # Load the configuration from YAML file
-with open("config.yaml", 'r') as file:
-    config = yaml.safe_load(file)
+# with open("config.yaml", 'r') as file:
+#     config = yaml.safe_load(file)
 
 # Initialize Pygame
 pygame.init()
@@ -18,19 +18,19 @@ clock = pygame.time.Clock()
 # set up config values
 
 # window config
-WINDOW_WIDTH = config['window']['width']
-WINDOW_HEIGHT = config['window']['height']
+WINDOW_WIDTH = config.get('window').get('width')
+WINDOW_HEIGHT = config.get('window').get('height')
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption(config['window']['title'])
+pygame.display.set_caption(config.get('window').get('title'))
 
-# Colors from the config file
-BACKGROUND_COLOR = config['colors']['background']
-CIRCLE_COLOR = config['colors']['circle']
-CIRCLE_RADIUS = config['circle']['radius']
+# Colors from the config.get(file
+BACKGROUND_COLOR = config.get('colors').get('background')
+CIRCLE_COLOR = config.get('colors').get('circle')
+CIRCLE_RADIUS = config.get('circle').get('radius')
 
-# getting layer values from config
-LAYER_WIDTH = config['layer']['width']
-LAYER_HEIGHT = config['layer']['height']
+# getting layer values from config.get(LAYER_WIDTH = config.get('layer']['width']
+LAYER_HEIGHT = config.get('layer').get('height')
+LAYER_WIDTH = config.get('layer').get('height')
 
 # layer variables
 current_layer = 0
@@ -41,14 +41,27 @@ layers = [
     pygame.Surface((LAYER_WIDTH, LAYER_HEIGHT)),
     z_level=0,
     base_color=200
+    ),
+    Layer(
+    pygame.Surface((LAYER_WIDTH, LAYER_HEIGHT)),
+    z_level=1,
+    base_color=200
+    ),
+    Layer(
+    pygame.Surface((LAYER_WIDTH, LAYER_HEIGHT)),
+    z_level=2,
+    base_color=200
     )
 ]
-# setup ui elements
-color_picker = UI((WINDOW_WIDTH, WINDOW_HEIGHT - LAYER_HEIGHT))
+
+# setup UI elements
+color_picker = ColorPicker((WINDOW_WIDTH, WINDOW_HEIGHT - LAYER_HEIGHT))
+
+layer_handler = LayerHandler(layers)
 
 # canvas variables
-brush_size = config['brush']['radius']
-brush_color = config['colors']['brush_default']
+brush_size = config.get('brush').get('radius')
+brush_color = config.get('colors').get('brush_default')
 
 # init buffer
 buffer = Buffer(LAYER_WIDTH, LAYER_HEIGHT)
@@ -69,23 +82,35 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+    # ==================
+    # == UPDATE LOGIC ==
+    # ==================
 
     # Get mouse state
     mouse_buttons = pygame.mouse.get_pressed()
     mouse_x, mouse_y = mouse_pos = pygame.mouse.get_pos()
 
+    # update layer_handler
+    layer_handler.update_layer_widgets()
+
+    # ====================
+    # == GRAPHICS CALLS ==
+    # ====================
+
+
     # Clear the screen
     screen.fill(BACKGROUND_COLOR)
 
     # draw layers
-    for layer in layers:
-        screen.blit(layer.surface, (0, 0))
+    for i in range(len(layers) - 1, -1, -1):
+        screen.blit(layers[i].surface, (0, 0))
 
     # draw buffer
     screen.blit(buffer.get_surface(), (0, 0))
 
     # draw ui
     screen.blit(color_picker.surface, (0, LAYER_HEIGHT))
+    screen.blit(layer_handler.surface, (LAYER_WIDTH, 0))
 
     # mouse
     if mouse_buttons[0]:
@@ -98,8 +123,10 @@ while running:
         current_mouse = mouse_pos
 
         # interact with ui
-        if mouse_y > LAYER_HEIGHT and mouse_x >= 0: # change color
+        if mouse_y > LAYER_HEIGHT and mouse_x >= 0 and mouse_x < WINDOW_WIDTH: # change color
             brush_color = color_picker.get_color(mouse_x)
+        elif mouse_x > LAYER_WIDTH and mouse_x < WINDOW_WIDTH and mouse_y >= 0 and mouse_y <= LAYER_HEIGHT:
+            print('right ui')
         else:
             buffer_has_data = True
             pygame.draw.line(
@@ -110,7 +137,6 @@ while running:
                 width=brush_size
             )
     elif mouse_buttons[2]:
-        print(pixel_copy_arr)
         # right click
         pygame.pixelcopy.surface_to_array(
             array=pixel_copy_arr,
