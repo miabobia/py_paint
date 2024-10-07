@@ -16,13 +16,12 @@ class Buffer:
     def get_painted_pixels(self) -> tuple[int, int, int]:
         pixels = []
         w, h = self.surface.get_size()
-        print(w, h)
         for y in range(h):
             for x in range(w):
                 # only need one color value since all colors are grayscaled
                 r, _, _, a = tuple(self.get_surface().get_at((x, y)))
                 if a == 0: continue
-                pixels.append((x, y, r))
+                pixels.append((x, y, r, a))
 
         return pixels
 
